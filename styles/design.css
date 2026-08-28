@@ -1,0 +1,1595 @@
+/*
+ * Premium glassmorphism design layer.
+ * Visual only — no logic. Layer over layout.css structure.
+ */
+
+:root {
+  /* Surfaces */
+  --glass-bg: rgba(255, 255, 255, 0.06);
+  --glass-bg-strong: rgba(255, 255, 255, 0.09);
+  --glass-bg-hover: rgba(255, 255, 255, 0.12);
+  --glass-border: rgba(255, 255, 255, 0.14);
+  --glass-border-strong: rgba(255, 255, 255, 0.22);
+  --glass-blur: 22px;
+  --glass-saturate: 160%;
+
+  /* Foreground */
+  --fg-1: #f5f7fb;
+  --fg-2: #b7c0cf;
+  --fg-3: #7c8698;
+  --fg-faint: #59627a;
+
+  /* Accent */
+  --accent: #4d9dff;
+  --accent-soft: rgba(77, 157, 255, 0.16);
+  --accent-glow: rgba(77, 157, 255, 0.35);
+
+  /* Background gradient base (behind blobs) */
+  --bg-deep-1: #070b15;
+  --bg-deep-2: #0c1122;
+  --bg-deep-3: #131a2e;
+
+  /* Shape */
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-xl: 28px;
+  --radius-full: 9999px;
+
+  /* Depth */
+  --shadow-sm: 0 4px 16px rgba(2, 6, 16, 0.35);
+  --shadow-md: 0 10px 34px rgba(2, 6, 16, 0.45);
+  --shadow-lg: 0 20px 60px rgba(2, 6, 16, 0.55);
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 160ms;
+  --dur-base: 320ms;
+  --dur-slow: 600ms;
+
+  /* Typography */
+  --font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-scale: 1;
+}
+
+/* ============ Background ============ */
+#background-layer {
+  background: linear-gradient(160deg, var(--bg-deep-1) 0%, var(--bg-deep-2) 45%, var(--bg-deep-3) 100%);
+  overflow: hidden;
+}
+
+/* Live wallpaper video: single composited layer, cover scaling */
+#wallpaper-video {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: translateZ(0);
+  will-change: transform;
+  opacity: 0;
+  transition: opacity 900ms var(--ease-out);
+  pointer-events: none;
+}
+
+#wallpaper-video.is-loaded {
+  opacity: 1;
+}
+
+/* When video was preloaded by inline <script>, skip the slow fade-in */
+#wallpaper-video.is-preloaded {
+  transition: opacity 120ms var(--ease-out);
+}
+
+/* Readability overlay above the video */
+#background-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(4, 8, 18, 0) 35%, rgba(4, 8, 18, 0.38) 100%);
+}
+
+/* Disable the heavy blurred blobs while a wallpaper is playing (GPU saving) */
+#background-layer.has-wallpaper {
+  background: #000;
+}
+
+#background-layer.has-wallpaper .bg-blob {
+  display: none;
+}
+
+.bg-blob {
+  position: absolute;
+  z-index: 0;
+  border-radius: 50%;
+  filter: blur(90px);
+  will-change: transform;
+  animation: blob-drift var(--dur-slow * 7) var(--ease-in-out) infinite alternate;
+  pointer-events: none;
+}
+
+.bg-blob-1 {
+  width: 55vmax;
+  height: 55vmax;
+  top: -18vmax;
+  left: -12vmax;
+  background: radial-gradient(circle at 35% 35%, rgba(61, 111, 255, 0.55), transparent 62%);
+}
+
+.bg-blob-2 {
+  width: 48vmax;
+  height: 48vmax;
+  bottom: -20vmax;
+  right: -14vmax;
+  background: radial-gradient(circle at 60% 60%, rgba(154, 79, 255, 0.42), transparent 60%);
+  animation-delay: -4s;
+}
+
+.bg-blob-3 {
+  width: 34vmax;
+  height: 34vmax;
+  top: 34%;
+  left: 46%;
+  background: radial-gradient(circle at 50% 50%, rgba(38, 198, 218, 0.30), transparent 60%);
+  animation-delay: -2s;
+}
+
+@keyframes blob-drift {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to   { transform: translate3d(4vmax, 3vmax, 0) scale(1.08); }
+}
+
+/* ============ Glass surface ============ */
+.glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+}
+
+/* ============ Search bar ============ */
+#search-bar-placeholder {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 100%;
+  padding: 0 22px;
+  /* Frosted surface: a stronger tint mutes the animated wallpaper behind it.
+     A lighter, fixed blur over the moving video avoids per-frame re-sampling
+     shimmer, and the forced compositing layer keeps it stable — like the
+     shortcut/widget chips. */
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.10));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-full);
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  box-shadow: var(--shadow-sm);
+  transform: translateZ(0);
+  will-change: transform;
+  isolation: isolate;
+  transition:
+    border-color var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out),
+    background-color var(--dur-base) var(--ease-out);
+}
+
+.search-box__icon {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  color: var(--fg-3);
+  transition: color var(--dur-base) var(--ease-out);
+}
+
+.search-box__input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--fg-1);
+  font-family: var(--font-ui);
+  font-size: calc(15px * var(--font-scale));
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+.search-box__input::placeholder {
+  color: var(--fg-faint);
+}
+
+.search-box:hover {
+  border-color: var(--glass-border-strong);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.20), rgba(255, 255, 255, 0.14));
+  box-shadow: var(--shadow-md);
+}
+
+.search-box:focus-within {
+  border-color: var(--accent);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.20), rgba(255, 255, 255, 0.14));
+  box-shadow:
+    0 12px 40px rgba(2, 6, 16, 0.5),
+    0 0 0 4px var(--accent-soft),
+    0 0 24px var(--accent-glow);
+}
+
+.search-box:focus-within .search-box__icon {
+  color: var(--accent);
+}
+
+.search-box:focus-within .search-box__input {
+  caret-color: var(--accent);
+}
+
+/* Entrance animation (one-time, compositor-friendly: no backdrop re-blur loop) */
+.search-box {
+  animation: search-in 560ms var(--ease-out) both;
+}
+
+@keyframes search-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* ============ Settings button ============ */
+#settings-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-full);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  color: var(--fg-2);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition:
+    color var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) var(--ease-out),
+    background-color var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
+}
+
+#settings-button svg {
+  width: 20px;
+  height: 20px;
+  transition: transform var(--dur-slow) var(--ease-out);
+}
+
+#settings-button:hover {
+  color: var(--fg-1);
+  border-color: var(--glass-border-strong);
+  background: var(--glass-bg-hover);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+#settings-button:hover svg {
+  transform: rotate(90deg);
+}
+
+#settings-button:active {
+  transform: translateY(0) scale(0.94);
+}
+
+/* ============ Widget panel ============ */
+#widget-area {
+  display: flex;
+  flex-direction: column;
+}
+
+.widget-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  transition:
+    border-color var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out);
+}
+
+.widget-panel:hover {
+  border-color: var(--glass-border-strong);
+  box-shadow: var(--shadow-lg);
+}
+
+.widget-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.widget-panel__title {
+  font-family: var(--font-ui);
+  font-size: calc(11px * var(--font-scale));
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+}
+
+.widget-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-sm);
+  transition:
+    transform var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out),
+    background-color var(--dur-base) var(--ease-out);
+}
+
+.widget-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--glass-border-strong);
+  background: var(--glass-bg-strong);
+  box-shadow: var(--shadow-md);
+}
+
+.widget-card--row {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+
+.widget-card__label {
+  font-family: var(--font-ui);
+  font-size: calc(11px * var(--font-scale));
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+}
+
+.widget-card__value {
+  font-family: var(--font-ui);
+  font-size: calc(28px * var(--font-scale));
+  font-weight: 300;
+  line-height: 1.05;
+  color: var(--fg-1);
+  font-variant-numeric: tabular-nums;
+}
+
+.widget-card__value--md {
+  font-size: calc(20px * var(--font-scale));
+}
+
+.clock-value {
+  color: var(--fg-1);
+}
+
+.widget-card__sub {
+  font-family: var(--font-ui);
+  font-size: calc(12px * var(--font-scale));
+  color: var(--fg-3);
+}
+
+.widget-card__icon {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  color: var(--fg-2);
+}
+
+/* ============ Shortcut bar ============ */
+/* The grid is a centered, responsive auto-fill container; tiles are
+   uniform-width chips. Tile width/height come from --tile-width etc. set
+   by the ShortcutManager from the selected size. */
+
+#shortcut-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--tile-width, 88px), var(--tile-width, 88px)));
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  box-shadow: var(--shadow-md);
+}
+
+.shortcut-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  width: var(--tile-width, 88px);
+  min-height: var(--tile-height, 100px);
+  padding: 10px 8px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-sm);
+  text-decoration: none;
+  transition:
+    transform var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out),
+    background-color var(--dur-base) var(--ease-out);
+  will-change: transform;
+}
+
+.shortcut-tile:hover {
+  transform: translateY(-5px) scale(1.05);
+  border-color: var(--glass-border-strong);
+  background: rgba(255, 255, 255, 0.09);
+  box-shadow:
+    0 16px 40px rgba(2, 6, 16, 0.5),
+    0 0 20px rgba(77, 157, 255, 0.16);
+  z-index: 2;
+}
+
+.shortcut-tile:active {
+  transform: translateY(-1px) scale(0.97);
+}
+
+.shortcut-tile__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tile-icon, 40px);
+  height: var(--tile-icon, 40px);
+  border-radius: 13px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #5b7cfa, #3d5fd9);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  transition:
+    transform var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out);
+}
+
+.shortcut-tile:hover .shortcut-tile__icon {
+  transform: translateY(-2px) scale(1.06);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+}
+
+.shortcut-tile__img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 5px;
+}
+
+.shortcut-tile__fallback {
+  line-height: 1;
+  user-select: none;
+}
+
+.tile-youtube { background: linear-gradient(135deg, #ff4e5a, #d31f30); }
+.tile-github  { background: linear-gradient(135deg, #3a4152, #1c2029); }
+.tile-gmail   { background: linear-gradient(135deg, #ff8a6b, #e0442e); }
+.tile-x       { background: linear-gradient(135deg, #23282f, #0e1116); }
+.tile-reddit  { background: linear-gradient(135deg, #ff8a4c, #f24a1a); }
+
+.shortcut-tile__label {
+  font-family: var(--font-ui);
+  font-size: var(--tile-font, 11px);
+  font-weight: 500;
+  color: var(--fg-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  transition: color var(--dur-base) var(--ease-out);
+}
+
+.shortcut-tile:hover .shortcut-tile__label {
+  color: var(--fg-1);
+}
+
+/* Hide title / hide icon (from settings) */
+#shortcut-grid.hide-title .shortcut-tile__label {
+  display: none;
+}
+
+#shortcut-grid.hide-icon .shortcut-tile__icon {
+  display: none;
+}
+
+/* Hover actions (edit / delete) */
+.shortcut-tile__actions {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    opacity var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
+  z-index: 3;
+}
+
+.shortcut-tile:hover .shortcut-tile__actions,
+.shortcut-tile:focus-within .shortcut-tile__actions {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.shortcut-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  border: 1px solid var(--glass-border-strong);
+  background: rgba(10, 14, 24, 0.75);
+  color: var(--fg-2);
+  cursor: pointer;
+  padding: 0;
+  transition:
+    background-color var(--dur-base) var(--ease-out),
+    color var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) var(--ease-out);
+}
+
+.shortcut-action-btn svg {
+  width: 12px;
+  height: 12px;
+}
+
+.shortcut-action-btn:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Drag & drop states */
+.shortcut-tile.is-dragging {
+  opacity: 0.35;
+  transform: scale(0.92);
+}
+
+.shortcut-tile.drop-before::after,
+.shortcut-tile.drop-after::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.shortcut-tile.drop-before::after {
+  left: -8px;
+}
+
+.shortcut-tile.drop-after::after {
+  right: -8px;
+}
+
+/* Add tile */
+.shortcut-tile--add {
+  border-style: dashed;
+  border-color: var(--glass-border-strong);
+  background: transparent;
+  box-shadow: none;
+}
+
+.shortcut-tile--add:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 0 24px var(--accent-glow);
+}
+
+.shortcut-tile__icon--add {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-border-strong);
+  color: var(--fg-2);
+  box-shadow: none;
+}
+
+.shortcut-tile__icon--add svg {
+  width: 18px;
+  height: 18px;
+}
+
+.shortcut-tile--add:hover .shortcut-tile__icon--add {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(77, 157, 255, 0.12);
+}
+
+.shortcut-tile--add:hover .shortcut-tile__label {
+  color: var(--accent);
+}
+
+/* ============ Wallpaper settings button ============ */
+#wallpaper-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-full);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  color: var(--fg-2);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition:
+    color var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) var(--ease-out),
+    background-color var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
+}
+
+#wallpaper-button svg {
+  width: 20px;
+  height: 20px;
+  transition: transform var(--dur-slow) var(--ease-out);
+}
+
+#wallpaper-button:hover {
+  color: var(--fg-1);
+  border-color: var(--glass-border-strong);
+  background: var(--glass-bg-hover);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+#wallpaper-button:hover svg {
+  transform: scale(1.08);
+}
+
+#wallpaper-button:active {
+  transform: translateY(0) scale(0.94);
+}
+
+#wallpaper-button[aria-expanded='true'] {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+
+/* ============ Wallpaper settings panel ============ */
+#wallpaper-panel {
+  position: fixed;
+  top: 84px;
+  left: 24px;
+  z-index: 50;
+  width: min(360px, calc(100vw - 48px));
+  max-height: calc(100vh - 108px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border-radius: var(--radius-lg);
+  background: rgba(12, 18, 32, 0.78);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  transform: translateY(-10px) scale(0.98);
+  pointer-events: none;
+  transition:
+    opacity var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
+}
+
+#wallpaper-panel.is-open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.wp-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.wp-panel__title {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+}
+
+.wp-panel__count {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--fg-3);
+}
+
+/* Thumbnail grid */
+.wp-panel__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  overflow-y: auto;
+  max-height: 240px;
+}
+
+.wp-thumb {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition:
+    border-color var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
+}
+
+.wp-thumb:hover {
+  transform: translateY(-2px);
+  border-color: var(--glass-border-strong);
+  box-shadow: var(--shadow-md);
+}
+
+.wp-thumb.is-active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft), 0 0 20px var(--accent-glow);
+}
+
+.wp-thumb__preview {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.wp-thumb__name {
+  position: relative;
+  z-index: 2;
+  max-width: 90%;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--fg-1);
+  background: rgba(6, 10, 20, 0.55);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wp-thumb__remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 3;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: rgba(6, 10, 20, 0.6);
+  color: var(--fg-2);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out);
+}
+
+.wp-thumb:hover .wp-thumb__remove,
+.wp-thumb:focus-within .wp-thumb__remove {
+  opacity: 1;
+}
+
+.wp-thumb__remove:hover {
+  color: #fff;
+  background: rgba(220, 40, 60, 0.7);
+}
+
+.wp-thumb__remove svg {
+  width: 12px;
+  height: 12px;
+}
+
+.wp-thumb--add {
+  border-style: dashed;
+  border-color: var(--glass-border-strong);
+  background: transparent;
+  box-shadow: none;
+}
+
+.wp-thumb--add:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 0 18px var(--accent-glow);
+}
+
+.wp-thumb__add-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--glass-border-strong);
+  color: var(--fg-2);
+}
+
+.wp-thumb--add:hover .wp-thumb__add-icon {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.wp-thumb__add-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Toggles */
+.wp-panel__controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.wp-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+}
+
+.wp-toggle__label {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg-2);
+}
+
+.wp-toggle__input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.wp-toggle__slider {
+  position: relative;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 22px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--glass-border);
+  transition: background-color var(--dur-base) var(--ease-out);
+}
+
+.wp-toggle__slider::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-full);
+  background: var(--fg-2);
+  transition: transform var(--dur-base) var(--ease-out), background-color var(--dur-base) var(--ease-out);
+}
+
+.wp-toggle__input:checked + .wp-toggle__slider {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.wp-toggle__input:checked + .wp-toggle__slider::after {
+  transform: translateX(18px);
+  background: #fff;
+}
+
+.wp-toggle__input:focus-visible + .wp-toggle__slider {
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.wp-file-input {
+  display: none;
+}
+
+/* ============ Settings panel ============ */
+#settings-panel {
+  position: fixed;
+  top: 84px;
+  right: 24px;
+  z-index: 50;
+  width: min(320px, calc(100vw - 48px));
+  max-height: calc(100vh - 108px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  overflow-y: auto;
+  border-radius: var(--radius-lg);
+  background: rgba(12, 18, 32, 0.82);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  transform: translateY(-10px) scale(0.98);
+  pointer-events: none;
+  transition:
+    opacity var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
+}
+
+#settings-panel.is-open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.set-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.set-panel__title {
+  font-family: var(--font-ui);
+  font-size: calc(11px * var(--font-scale));
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+}
+
+.set-panel__section-head {
+  font-family: var(--font-ui);
+  font-size: calc(12px * var(--font-scale));
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--fg-2);
+}
+
+.set-panel__section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.set-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.set-row__label {
+  font-family: var(--font-ui);
+  font-size: calc(13px * var(--font-scale));
+  font-weight: 500;
+  color: var(--fg-1);
+}
+
+.set-select {
+  flex: 0 0 auto;
+  min-width: 120px;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--fg-1);
+  font-family: var(--font-ui);
+  font-size: calc(13px * var(--font-scale));
+  cursor: pointer;
+}
+
+.set-select option {
+  color: #1a1a1a;
+  background: #fff;
+}
+
+.set-text {
+  flex: 0 1 auto;
+  min-width: 0;
+  width: 140px;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--fg-1);
+  font-family: var(--font-ui);
+  font-size: calc(13px * var(--font-scale));
+}
+
+.set-text::placeholder {
+  color: var(--fg-3);
+}
+
+.set-text:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-light);
+}
+
+.set-range__box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.set-range {
+  flex: 0 0 auto;
+  width: 120px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.set-range__value {
+  font-family: var(--font-ui);
+  font-size: calc(12px * var(--font-scale));
+  color: var(--fg-2);
+  min-width: 38px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.set-color {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+}
+
+.set-color::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+
+.set-color::-webkit-color-swatch {
+  border-radius: 8px;
+  border: none;
+}
+
+/* Toggle (settings) */
+.set-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+}
+
+.set-toggle__label {
+  font-family: var(--font-ui);
+  font-size: calc(13px * var(--font-scale));
+  font-weight: 500;
+  color: var(--fg-1);
+}
+
+.set-toggle__input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.set-toggle__slider {
+  position: relative;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 22px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--glass-border);
+  transition: background-color var(--dur-base) var(--ease-out);
+}
+
+.set-toggle__slider::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-full);
+  background: var(--fg-2);
+  transition: transform var(--dur-base) var(--ease-out), background-color var(--dur-base) var(--ease-out);
+}
+
+.set-toggle__input:checked + .set-toggle__slider {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.set-toggle__input:checked + .set-toggle__slider::after {
+  transform: translateX(18px);
+  background: #fff;
+}
+
+.set-toggle__input:focus-visible + .set-toggle__slider {
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* ============ Scrollbars ============ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+/* ============ Reduced motion ============ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+
+/* ============ Shortcut dialog ============ */
+.sc-dialog {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(2, 6, 16, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--dur-base) var(--ease-out),
+    visibility var(--dur-base) var(--ease-out);
+  z-index: 200;
+}
+
+.sc-dialog.is-open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.sc-dialog__box {
+  width: min(420px, 100%);
+  background: linear-gradient(160deg, rgba(24, 30, 46, 0.92), rgba(12, 16, 26, 0.94));
+  border: 1px solid var(--glass-border-strong);
+  border-radius: 20px;
+  box-shadow: 0 30px 80px rgba(2, 6, 16, 0.6);
+  overflow: hidden;
+  transform: translateY(12px) scale(0.98);
+  transition: transform var(--dur-base) var(--ease-out);
+}
+
+.sc-dialog.is-open .sc-dialog__box {
+  transform: translateY(0) scale(1);
+}
+
+.sc-dialog__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.sc-dialog__title {
+  font-family: var(--font-ui);
+  font-size: calc(15px * var(--font-scale));
+  font-weight: 600;
+  color: var(--fg-1);
+}
+
+.sc-dialog__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+  background: transparent;
+  color: var(--fg-2);
+  cursor: pointer;
+  transition: background-color var(--dur-base) var(--ease-out), color var(--dur-base) var(--ease-out);
+}
+
+.sc-dialog__close:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.sc-dialog__close svg {
+  width: 14px;
+  height: 14px;
+}
+
+.sc-dialog__body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+}
+
+.sc-dialog__field {
+  width: 100%;
+  flex: 1;
+}
+
+.sc-dialog__error {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: calc(12px * var(--font-scale));
+  color: #ff6b6b;
+}
+
+.sc-dialog__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.sc-btn {
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--glass-border-strong);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--fg-1);
+  font-family: var(--font-ui);
+  font-size: calc(13px * var(--font-scale));
+  cursor: pointer;
+  transition:
+    background-color var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
+}
+
+.sc-btn:hover {
+  border-color: var(--glass-border-strong);
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+}
+
+.sc-btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.sc-btn--primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+/* ---------- NovazhLabs branding: settings logo + footer credit ---------- */
+.set-panel__logo {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  box-shadow: 0 2px 10px rgba(2, 6, 16, 0.45);
+  flex: 0 0 auto;
+}
+
+.set-panel__head {
+  gap: 10px;
+}
+
+.set-panel__head .set-panel__title {
+  margin-right: auto;
+}
+
+#app-footer {
+  position: relative;
+  z-index: 1;
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0 24px 8px;
+  pointer-events: none;
+}
+
+.app-footer__text {
+  font-family: var(--font-ui);
+  font-size: calc(11px * var(--font-scale));
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--fg-faint);
+  text-shadow: 0 1px 4px rgba(2, 6, 16, 0.5);
+}
+
+.app-footer__link {
+  color: var(--fg-3);
+  text-decoration: none;
+  pointer-events: auto;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+
+.app-footer__link:hover {
+  color: var(--accent);
+}
+
+/* ---------- Pinned NovazhLabs tile (non-editable brand shortcut) ---------- */
+.shortcut-tile--pinned {
+  cursor: pointer;
+}
+
+.shortcut-tile--pinned .shortcut-tile__icon {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.shortcut-tile--pinned .shortcut-tile__img {
+  border-radius: 12px;
+}
+
+/* ---------- Search suggestions / history dropdown ---------- */
+#search-bar-placeholder {
+  position: relative;
+}
+
+.search-suggest {
+  display: none;
+  flex-direction: column;
+  padding: 6px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(16, 22, 38, 0.92), rgba(10, 14, 26, 0.94));
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  box-shadow: var(--shadow-lg);
+}
+
+.search-suggest.is-open {
+  display: flex;
+  animation: suggest-in var(--dur-fast) var(--ease-out);
+}
+
+@keyframes suggest-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.search-box:not(.search-suggest-anchor) .search-suggest,
+.search-box {
+  /* anchor is the search box itself */
+}
+
+.search-box .search-suggest {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 60;
+}
+
+.search-suggest__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 14px;
+  margin: 1px 0;
+  border-radius: 12px;
+  cursor: pointer;
+  color: var(--fg-2);
+  font-family: var(--font-ui);
+  font-size: calc(13.5px * var(--font-scale));
+  transition:
+    background-color 120ms var(--ease-out),
+    color 120ms var(--ease-out);
+}
+
+.search-suggest__item:hover,
+.search-suggest__item.is-active {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--fg-1);
+}
+
+.search-suggest__icon {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  opacity: 0.65;
+}
+
+.search-suggest__text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-suggest__text b {
+  color: var(--fg-1);
+  font-weight: 600;
+}
+
+.search-suggest__item--recent .search-suggest__icon {
+  opacity: 0.5;
+}
+
+.search-suggest__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--fg-3);
+  opacity: 0;
+  cursor: pointer;
+  transition:
+    opacity 120ms var(--ease-out),
+    background-color 120ms var(--ease-out),
+    color 120ms var(--ease-out);
+}
+
+.search-suggest__remove svg {
+  width: 13px;
+  height: 13px;
+}
+
+.search-suggest__item:hover .search-suggest__remove,
+.search-suggest__item.is-active .search-suggest__remove {
+  opacity: 1;
+}
+
+.search-suggest__remove:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--fg-1);
+}
+
+.search-suggest__clear-all {
+  align-self: center;
+  margin-top: 4px;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--fg-3);
+  font-family: var(--font-ui);
+  font-size: calc(11.5px * var(--font-scale));
+  cursor: pointer;
+  transition: color 120ms var(--ease-out);
+}
+
+.search-suggest__clear-all:hover {
+  color: var(--accent);
+}
+
+/* ---------- Weather city autocomplete (settings) ---------- */
+.city-ac {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.city-ac .set-text {
+  width: 100%;
+}
+
+.city-ac__list {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 80;
+  flex-direction: column;
+  padding: 5px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(16, 22, 38, 0.95), rgba(10, 14, 26, 0.97));
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  box-shadow: var(--shadow-md);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.city-ac__list.is-open {
+  display: flex;
+  animation: suggest-in var(--dur-fast) var(--ease-out);
+}
+
+.city-ac__item {
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--fg-2);
+  font-family: var(--font-ui);
+  font-size: calc(12.5px * var(--font-scale));
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 120ms var(--ease-out),
+    color 120ms var(--ease-out);
+}
+
+.city-ac__item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--fg-1);
+}

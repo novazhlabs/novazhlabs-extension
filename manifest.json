@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "NovazhLabs New Tab",
+  "version": "1.1.0",
+  "description": "NovazhLabs New Tab — Glass UI, live wallpapers, search history and smart suggestions",
+  "chrome_url_overrides": {
+    "newtab": "index.html"
+  },
+  "permissions": [
+    "storage",
+    "bookmarks",
+    "topSites"
+  ],
+  "host_permissions": [
+    "https://www.google.com/s2/*",
+    "https://www.google.com/complete/*",
+    "https://api.bing.com/*",
+    "https://duckduckgo.com/*",
+    "https://wttr.in/*",
+    "https://api.openweathermap.org/*",
+    "https://geocoding-api.open-meteo.com/*"
+  ],
+  "background": {
+    "service_worker": "scripts/background/service-worker.js",
+    "type": "module"
+  },
+  "icons": {
+    "16": "assets/icons/icon-16.png",
+    "32": "assets/icons/icon-32.png",
+    "48": "assets/icons/icon-48.png",
+    "128": "assets/icons/icon-128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "assets/icons/*",
+        "assets/wallpapers/*"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

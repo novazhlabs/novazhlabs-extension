@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NovazhLabs New Tab</title>
+  <link rel="icon" type="image/png" href="assets/icons/favicon.png">
+  <link rel="apple-touch-icon" href="assets/icons/icon-128.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/layout.css">
+  <link rel="stylesheet" href="styles/design.css">
+</head>
+<body>
+  <!-- Background layer -->
+  <div id="background-layer">
+    <video
+      id="wallpaper-video"
+      autoplay
+      muted
+      loop
+      playsinline
+      preload="auto"
+      aria-hidden="true"
+      tabindex="-1"
+    ></video>
+    <script src="scripts/wallpapers/preload.js"></script>
+    <div id="background-overlay"></div>
+    <div class="bg-blob bg-blob-1"></div>
+    <div class="bg-blob bg-blob-2"></div>
+    <div class="bg-blob bg-blob-3"></div>
+  </div>
+
+  <!-- App shell -->
+  <div id="app-shell">
+
+    <!-- Top bar -->
+    <header id="top-bar">
+      <button id="wallpaper-button" data-role="wallpaper-settings" type="button" aria-label="Wallpaper settings" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="4"></rect>
+          <circle cx="8.5" cy="8.5" r="1.5"></circle>
+          <path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"></path>
+        </svg>
+      </button>
+      <div id="search-bar-placeholder" data-role="search-bar">
+        <div class="search-box">
+          <svg class="search-box__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input class="search-box__input" id="search-input" type="text" placeholder="Search the web..." aria-label="Search">
+        </div>
+      </div>
+      <button id="settings-button" data-role="settings-button" type="button" aria-label="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
+    </header>
+
+    <!-- Main area -->
+    <main id="main-area">
+
+      <!-- Widgets (left) — rendered by the WidgetEngine -->
+      <aside id="widget-area" data-role="widgets"></aside>
+
+    </main>
+
+    <!-- Shortcuts (bottom, centered) — rendered by the ShortcutManager -->
+    <section id="shortcut-area" data-role="shortcuts">
+      <div id="shortcut-grid"></div>
+    </section>
+
+    <!-- Footer credit -->
+    <footer id="app-footer">
+      <span class="app-footer__text">Made by <a href="https://novazhlabs.ir/" target="_blank" rel="noopener" class="app-footer__link">NovazhLabs</a></span>
+    </footer>
+  </div>
+
+  <script type="module" src="scripts/wallpapers/init.js"></script>
+
+  <!-- Wallpaper settings panel -->
+  <div id="wallpaper-panel" data-role="wallpaper-panel" aria-hidden="true">
+    <div class="wp-panel__head">
+      <span class="wp-panel__title">Wallpapers</span>
+      <span class="wp-panel__count" data-wallpaper-count></span>
+    </div>
+
+    <div class="wp-panel__grid" data-wallpaper-grid></div>
+
+    <div class="wp-panel__controls" data-wallpaper-controls></div>
+
+    <input
+      id="wallpaper-file-input"
+      type="file"
+      accept="video/mp4,video/webm,video/quicktime,image/jpeg,image/png,image/gif,image/webp,image/bmp,image/svg+xml"
+      multiple
+      class="wp-file-input"
+      hidden
+    >
+  </div>
+
+  <!-- Settings panel -->
+  <div id="settings-panel" data-role="settings-panel" aria-hidden="true">
+    <div class="set-panel__head">
+      <img src="assets/icons/favicon.png" alt="" class="set-panel__logo">
+      <span class="set-panel__title">NovazhLabs</span>
+    </div>
+
+    <div class="set-panel__section-head">Font</div>
+    <div class="set-panel__section" data-settings-font></div>
+
+    <div class="set-panel__section-head">Search</div>
+    <div class="set-panel__section" data-settings-search></div>
+
+    <div class="set-panel__section-head">Widgets</div>
+    <div class="set-panel__section" data-settings-widgets></div>
+
+    <div class="set-panel__section-head">Shortcuts</div>
+    <div class="set-panel__section" data-settings-shortcuts></div>
+  </div>
+
+  <!-- Shortcut add/edit dialog -->
+  <div id="shortcut-dialog" class="sc-dialog" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="sc-dialog__box">
+      <div class="sc-dialog__head">
+        <span class="sc-dialog__title" data-sc-dialog-title>Add shortcut</span>
+        <button type="button" class="sc-dialog__close" data-sc-dialog-close aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="sc-dialog__body">
+        <label class="set-row">
+          <span class="set-row__label">URL</span>
+          <input type="text" class="set-text sc-dialog__field" data-sc-dialog-url placeholder="e.g. github.com" spellcheck="false">
+        </label>
+        <label class="set-row">
+          <span class="set-row__label">Name</span>
+          <input type="text" class="set-text sc-dialog__field" data-sc-dialog-name placeholder="Auto from URL" spellcheck="false">
+        </label>
+        <p class="sc-dialog__error" data-sc-dialog-error hidden></p>
+      </div>
+      <div class="sc-dialog__footer">
+        <button type="button" class="sc-btn" data-sc-dialog-cancel>Cancel</button>
+        <button type="button" class="sc-btn sc-btn--primary" data-sc-dialog-save>Save</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

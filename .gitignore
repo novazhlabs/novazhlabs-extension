@@ -1,0 +1,18 @@
+# Build tools (not needed in published extension)
+generate-wallpapers.js
+generate-wallpapers.ps1
+
+# OS files
+Thumbs.db
+.DS_Store
+Desktop.ini
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
